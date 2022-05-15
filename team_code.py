@@ -20,6 +20,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+from model import get_model
 
 
 ################################################################################
@@ -109,8 +110,10 @@ def train_challenge_model(data_folder, model_folder, verbose):
     # outcome_classifier = RandomForestClassifier(
     #     n_estimators=n_estimators, max_leaf_nodes=max_leaf_nodes, random_state=random_state).fit(features, outcomes)
 
-    murmur_classifier = DecisionTreeClassifier().fit(features, murmurs)
-    outcome_classifier = DecisionTreeClassifier().fit(features, outcomes)
+    # murmur_classifier = DecisionTreeClassifier().fit(features, murmurs)
+    # outcome_classifier = DecisionTreeClassifier().fit(features, outcomes)
+    murmur_classifier = get_model(3, murmurs.shape)
+    outcome_classifier = get_model(2, outcomes.shape)
 
     # Save the model.
     save_challenge_model(model_folder, imputer, murmur_classes,
