@@ -1,43 +1,35 @@
+from pyexpat import model
 from keras import optimizers, losses, activations, models
 from keras.layers import Dense, Input, Dropout, Convolution1D, MaxPool1D, GlobalMaxPool1D
+import tensorflow as tf
 
 
-def get_model(nclass: int, shape: tuple):
-    inp = Input(shape=shape)
-    img_1 = Convolution1D(
-        16, kernel_size=5, activation=activations.relu, padding="valid")(inp)
-    img_1 = Convolution1D(
-        16, kernel_size=5, activation=activations.relu, padding="valid")(img_1)
-    img_1 = MaxPool1D(pool_size=2)(img_1)
-    img_1 = Dropout(rate=0.1)(img_1)
-    img_1 = Convolution1D(
-        32, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
-    img_1 = Convolution1D(
-        32, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
-    img_1 = MaxPool1D(pool_size=2)(img_1)
-    img_1 = Dropout(rate=0.1)(img_1)
-    img_1 = Convolution1D(
-        32, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
-    img_1 = Convolution1D(
-        32, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
-    img_1 = MaxPool1D(pool_size=2)(img_1)
-    img_1 = Dropout(rate=0.1)(img_1)
-    img_1 = Convolution1D(256, kernel_size=3,
-                          activation=activations.relu, padding="valid")(img_1)
-    img_1 = Convolution1D(256, kernel_size=3,
-                          activation=activations.relu, padding="valid")(img_1)
-    img_1 = GlobalMaxPool1D()(img_1)
-    img_1 = Dropout(rate=0.2)(img_1)
+# convolution classification models with features shape (942, 26), labels shape (942, 2) and (942, 3)
+def get_model(num_classes, features_shape, activation='relu', dropout=0.5, kernel_size=3, pool_size=2,
+              filters=32, dense_size=64, dense_activation='relu', dense_dropout=0.5, verbose=0):
+    if verbose >= 1:
+        print('Building model...')
 
-    dense_1 = Dense(64, activation=activations.relu, name="dense_1")(img_1)
-    dense_1 = Dense(64, activation=activations.relu, name="dense_2")(dense_1)
-    dense_1 = Dense(nclass, activation=activations.sigmoid,
-                    name="dense_3_ptbdb")(dense_1)
+    # Input layer.
+    input_layer = Input(shape=features_shape)
 
-    model = models.Model(inputs=inp, outputs=dense_1)
-    opt = optimizers.Adam(0.001)
+    # Convolutional layers.
+    conv_layer = Convolution1D(filters=filters, kernel_size=kernel_size, activation=activation,
+                               padding='same')(input_layer)
+    conv_layer = MaxPool1D(pool_size=pool_size)(conv_layer)
+    conv_layer = Dropout(dropout)(conv_layer)
 
-    model.compile(optimizer=opt, loss=losses.binary_crossentropy,
-                  metrics=['acc'])
-    model.summary()
+    # Dense layers.
+    dense_layer = Dense(dense_size, activation=dense_activation)(conv_layer)
+    dense_layer = Dropout(dense_dropout)(dense_layer)
+
+    # Output layer.
+    output_layer = Dense(num_classes, activation='softmax')(dense_layer)
+
+    # Build model.
+    model = models.Model(inputs=input_layer, outputs=output_layer)
+
+    if verbose >= 1:
+        print('Done.')
+
     return model
