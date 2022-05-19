@@ -49,9 +49,9 @@ def train_challenge_model(data_folder, model_folder, verbose):
         print('Extracting features and labels from the Challenge data...')
 
     murmur_classes = ['Present', 'Unknown', 'Absent']
-    num_murmur_classes = len(murmur_classes)
+    # num_murmur_classes = len(murmur_classes)
     outcome_classes = ['Abnormal', 'Normal']
-    num_outcome_classes = len(outcome_classes)
+    # num_outcome_classes = len(outcome_classes)
 
     features = list()
     murmurs = list()
@@ -71,19 +71,17 @@ def train_challenge_model(data_folder, model_folder, verbose):
         features.append(current_features)
 
         # Extract labels and use one-hot encoding.
-        current_murmur = np.zeros(num_murmur_classes, dtype=int)
+        murmurs = np.zeros(num_patient_files, dtype=int)
         murmur = get_murmur(current_patient_data)
         if murmur in murmur_classes:
-            j = murmur_classes.index(murmur)
-            current_murmur[j] = 1
-        murmurs.append(current_murmur)
+            current_murmur = murmur_classes.index(murmur)
+            murmurs[i] = current_murmur
 
-        current_outcome = np.zeros(num_outcome_classes, dtype=int)
+        outcomes = np.zeros(num_patient_files, dtype=int)
         outcome = get_outcome(current_patient_data)
         if outcome in outcome_classes:
-            j = outcome_classes.index(outcome)
-            current_outcome[j] = 1
-        outcomes.append(current_outcome)
+            current_outcome = outcome_classes.index(outcome)
+            outcomes[i] = current_outcome
 
     features = np.vstack(features)
     murmurs = np.vstack(murmurs)
