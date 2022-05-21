@@ -4,32 +4,25 @@ from keras.layers import Dense, Input, Dropout, Convolution1D, MaxPool1D, Global
 import tensorflow as tf
 
 
-# convolution classification models with features shape (942, 26), labels shape (942, 2) and (942, 3)
-def get_model(num_classes, features_shape, activation='relu', dropout=0.5, kernel_size=3, pool_size=2,
-              filters=32, dense_size=64, dense_activation='relu', dense_dropout=0.5, verbose=0):
-    if verbose >= 1:
-        print('Building model...')
+# fit model with 2D features and labels from challenge data
+def fit_model(features, labels, verbose):
+    # define model
+    model = models.Sequential()
+    model.add(Convolution1D(32, 3, activation=activations.relu,
+              input_shape=(features.shape[1], 1)))
+    model.add(MaxPool1D(2))
+    model.add(Convolution1D(32, 3, activation=activations.relu))
+    model.add(MaxPool1D(2))
+    model.add(Convolution1D(32, 3, activation=activations.relu))
+    model.add(GlobalMaxPool1D())
+    model.add(Dense(2, activation=activations.softmax))
 
-    # Input layer.
-    input_layer = Input(shape=features_shape)
+    # compile model
+    model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.01),
+                    loss=losses.categorical_crossentropy,
+                  metrics=['accuracy'])
 
-    # Convolutional layers.
-    conv_layer = Convolution1D(filters=filters, kernel_size=kernel_size, activation=activation,
-                               padding='same')(input_layer)
-    conv_layer = MaxPool1D(pool_size=pool_size)(conv_layer)
-    conv_layer = Dropout(dropout)(conv_layer)
-
-    # Dense layers.
-    dense_layer = Dense(dense_size, activation=dense_activation)(conv_layer)
-    dense_layer = Dropout(dense_dropout)(dense_layer)
-
-    # Output layer.
-    output_layer = Dense(num_classes, activation='softmax')(dense_layer)
-
-    # Build model.
-    model = models.Model(inputs=input_layer, outputs=output_layer)
-
-    if verbose >= 1:
-        print('Done.')
+    # fit model
+    model.fit(features, labels, epochs=10, verbose=verbose)
 
     return model

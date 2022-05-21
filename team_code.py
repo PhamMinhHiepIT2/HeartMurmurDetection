@@ -17,10 +17,10 @@ import os
 import sys
 import joblib
 from sklearn.impute import SimpleImputer
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from model import get_model
+from model import fit_model
+import tensorflow as tf
+from sklearn import svm
+
 
 
 ################################################################################
@@ -72,52 +72,46 @@ def train_challenge_model(data_folder, model_folder, verbose):
         features.append(current_features)
 
         # Extract labels and use one-hot encoding.
-        current_murmur = np.zeros(num_murmur_classes, dtype=int)
         murmur = get_murmur(current_patient_data)
         if murmur in murmur_classes:
-            j = murmur_classes.index(murmur)
-            current_murmur[j] = 1
-        murmurs.append(current_murmur)
+            current_murmur = murmur_classes.index(murmur)
+            murmurs.append(current_murmur)
 
-        current_outcome = np.zeros(num_outcome_classes, dtype=int)
         outcome = get_outcome(current_patient_data)
         if outcome in outcome_classes:
-            j = outcome_classes.index(outcome)
-            current_outcome[j] = 1
-        outcomes.append(current_outcome)
+            current_outcome = outcome_classes.index(outcome)
+            outcomes.append(current_outcome)
 
     features = np.vstack(features)
     murmurs = np.vstack(murmurs)
     outcomes = np.vstack(outcomes)
+    
 
     # Train the model.
     if verbose >= 1:
         print('Training model...')
 
-    # Define parameters for random forest classifier.
-    n_estimators = 123  # Number of trees in the forest.
-    max_leaf_nodes = 45   # Maximum number of leaf nodes in each tree.
-    random_state = 6789  # Random state; set for reproducibility.
 
     imputer = SimpleImputer().fit(features)
     features = imputer.transform(features)
     print(features.shape, murmurs.shape, outcomes.shape)
-    print(features[0])
-    print(outcomes[0])
-    print(murmurs)
-    # murmur_classifier = RandomForestClassifier(
-    #     n_estimators=n_estimators, max_leaf_nodes=max_leaf_nodes, random_state=random_state).fit(features, murmurs)
-    # outcome_classifier = RandomForestClassifier(
-    #     n_estimators=n_estimators, max_leaf_nodes=max_leaf_nodes, random_state=random_state).fit(features, outcomes)
+    murmurs = tf.keras.utils.to_categorical(murmurs, num_classes=3)
 
-    # murmur_classifier = DecisionTreeClassifier().fit(features, murmurs)
-    # outcome_classifier = DecisionTreeClassifier().fit(features, outcomes)
-    murmur_classifier = get_model(3, murmurs.shape)
-    outcome_classifier = get_model(2, outcomes.shape)
+
+    print("===========FEATURE============")
+    print(features)
+    print("===========MURMUR============")
+    print(murmurs)
+    print("===========OUTCOME============")
+    print(outcomes)
+    
+
+    murmur_classifier = fit_model(features, murmurs, 1)
+    # outcome_classifier = fit_model(features, outcomes, 1)
 
     # Save the model.
-    save_challenge_model(model_folder, imputer, murmur_classes,
-                         murmur_classifier, outcome_classes, outcome_classifier)
+    # save_challenge_model(model_folder, imputer, murmur_classes,
+    #                      murmur_classifier, outcome_classes, outcome_classifier)
 
     if verbose >= 1:
         print('Done.')
