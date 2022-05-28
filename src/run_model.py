@@ -9,23 +9,28 @@
 # where 'model' is a folder containing the your trained model, 'data' is a folder containing the Challenge data, and 'outputs' is a
 # folder for saving your model's outputs.
 
-import numpy as np, os, sys
-from helper_code import *
-from team_code import load_challenge_model, run_challenge_model
+import numpy as np
+import os
+import sys
+from src.helper_code import *
+from src.team_code import load_challenge_model, run_challenge_model
 
 # Run model.
+
+
 def run_model(model_folder, data_folder, output_folder, allow_failures, verbose):
     # Load models.
     if verbose >= 1:
         print('Loading Challenge model...')
 
-    model = load_challenge_model(model_folder, verbose) ### Teams: Implement this function!!!
+    # Teams: Implement this function!!!
+    model = load_challenge_model(model_folder, verbose)
 
     # Find the patient data files.
     patient_files = find_patient_files(data_folder)
     num_patient_files = len(patient_files)
 
-    if num_patient_files==0:
+    if num_patient_files == 0:
         raise Exception('No data was provided.')
 
     # Create a folder for the Challenge outputs if it does not already exist.
@@ -45,7 +50,8 @@ def run_model(model_folder, data_folder, output_folder, allow_failures, verbose)
 
         # Allow or disallow the model to fail on parts of the data; helpful for debugging.
         try:
-            classes, labels, probabilities = run_challenge_model(model, patient_data, recordings, verbose) ### Teams: Implement this function!!!
+            classes, labels, probabilities = run_challenge_model(
+                model, patient_data, recordings, verbose)  # Teams: Implement this function!!!
         except:
             if allow_failures:
                 if verbose >= 2:
@@ -59,15 +65,18 @@ def run_model(model_folder, data_folder, output_folder, allow_failures, verbose)
         root, extension = os.path.splitext(tail)
         output_file = os.path.join(output_folder, root + '.csv')
         patient_id = get_patient_id(patient_data)
-        save_challenge_outputs(output_file, patient_id, classes, labels, probabilities)
+        save_challenge_outputs(output_file, patient_id,
+                               classes, labels, probabilities)
 
     if verbose >= 1:
         print('Done.')
 
+
 if __name__ == '__main__':
     # Parse the arguments.
     if not (len(sys.argv) == 4 or len(sys.argv) == 5):
-        raise Exception('Include the model, data, and output folders as arguments, e.g., python run_model.py model data outputs.')
+        raise Exception(
+            'Include the model, data, and output folders as arguments, e.g., python run_model.py model data outputs.')
 
     # Define the model, data, and output folders.
     model_folder = sys.argv[1]
@@ -78,9 +87,10 @@ if __name__ == '__main__':
     allow_failures = False
 
     # Change the level of verbosity; helpful for debugging.
-    if len(sys.argv)==5 and is_integer(sys.argv[4]):
+    if len(sys.argv) == 5 and is_integer(sys.argv[4]):
         verbose = int(sys.argv[4])
     else:
         verbose = 1
 
-    run_model(model_folder, data_folder, output_folder, allow_failures, verbose)
+    run_model(model_folder, data_folder,
+              output_folder, allow_failures, verbose)

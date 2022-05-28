@@ -9,7 +9,7 @@
 #
 ################################################################################
 
-from helper_code import *
+from src.helper_code import *
 import numpy as np
 import scipy as sp
 import scipy.stats
@@ -20,7 +20,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from model import get_model
+from src.model import get_model
 
 
 ################################################################################
