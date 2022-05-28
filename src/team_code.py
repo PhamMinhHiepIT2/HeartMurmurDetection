@@ -9,7 +9,7 @@
 #
 ################################################################################
 
-from helper_code import *
+from src.helper_code import *
 import numpy as np
 import scipy as sp
 import scipy.stats

@@ -13,64 +13,93 @@
 # the area under the receiver-operating characteristic curve (AUROC), the area under the recall-precision curve (AUPRC), macro
 # accuracy, a weighted accuracy score, and the Challenge score.
 
-import os, os.path, sys, numpy as np
-from helper_code import load_patient_data, get_murmur, get_outcome, load_challenge_outputs, compare_strings
+import os
+import os.path
+import sys
+import numpy as np
+from src.helper_code import load_patient_data, get_murmur, get_outcome, load_challenge_outputs, compare_strings
 
 # Evaluate the models.
+
+
 def evaluate_model(label_folder, output_folder):
     # Define murmur and outcome classes.
     murmur_classes = ['Present', 'Unknown', 'Absent']
     outcome_classes = ['Abnormal', 'Normal']
 
     # Load and parse label and model output files.
-    label_files, output_files = find_challenge_files(label_folder, output_folder)
+    label_files, output_files = find_challenge_files(
+        label_folder, output_folder)
     murmur_labels = load_murmurs(label_files, murmur_classes)
-    murmur_binary_outputs, murmur_scalar_outputs = load_classifier_outputs(output_files, murmur_classes)
+    murmur_binary_outputs, murmur_scalar_outputs = load_classifier_outputs(
+        output_files, murmur_classes)
     outcome_labels = load_outcomes(label_files, outcome_classes)
-    outcome_binary_outputs, outcome_scalar_outputs = load_classifier_outputs(output_files, outcome_classes)
+    outcome_binary_outputs, outcome_scalar_outputs = load_classifier_outputs(
+        output_files, outcome_classes)
 
     # For each patient, set the 'Present' or 'Abnormal' class to positive if no class is positive or if multiple classes are positive.
     murmur_labels = enforce_positives(murmur_labels, murmur_classes, 'Present')
-    murmur_binary_outputs = enforce_positives(murmur_binary_outputs, murmur_classes, 'Present')
-    outcome_labels = enforce_positives(outcome_labels, outcome_classes, 'Abnormal')
-    outcome_binary_outputs = enforce_positives(outcome_binary_outputs, outcome_classes, 'Abnormal')
+    murmur_binary_outputs = enforce_positives(
+        murmur_binary_outputs, murmur_classes, 'Present')
+    outcome_labels = enforce_positives(
+        outcome_labels, outcome_classes, 'Abnormal')
+    outcome_binary_outputs = enforce_positives(
+        outcome_binary_outputs, outcome_classes, 'Abnormal')
 
     # Evaluate the murmur model by comparing the labels and model outputs.
-    murmur_auroc, murmur_auprc, murmur_auroc_classes, murmur_auprc_classes = compute_auc(murmur_labels, murmur_scalar_outputs)
-    murmur_f_measure, murmur_f_measure_classes = compute_f_measure(murmur_labels, murmur_binary_outputs)
-    murmur_accuracy, murmur_accuracy_classes = compute_accuracy(murmur_labels, murmur_binary_outputs)
-    murmur_weighted_accuracy = compute_weighted_accuracy(murmur_labels, murmur_binary_outputs, murmur_classes) # This is the murmur scoring metric.
-    murmur_cost = compute_cost(outcome_labels, murmur_binary_outputs, outcome_classes, murmur_classes) # Use *outcomes* to score *murmurs* for the Challenge cost metric, but this is not the actual murmur scoring metric.
-    murmur_scores = (murmur_classes, murmur_auroc, murmur_auprc, murmur_auroc_classes, murmur_auprc_classes, \
-        murmur_f_measure, murmur_f_measure_classes, murmur_accuracy, murmur_accuracy_classes, murmur_weighted_accuracy, murmur_cost)
+    murmur_auroc, murmur_auprc, murmur_auroc_classes, murmur_auprc_classes = compute_auc(
+        murmur_labels, murmur_scalar_outputs)
+    murmur_f_measure, murmur_f_measure_classes = compute_f_measure(
+        murmur_labels, murmur_binary_outputs)
+    murmur_accuracy, murmur_accuracy_classes = compute_accuracy(
+        murmur_labels, murmur_binary_outputs)
+    # This is the murmur scoring metric.
+    murmur_weighted_accuracy = compute_weighted_accuracy(
+        murmur_labels, murmur_binary_outputs, murmur_classes)
+    # Use *outcomes* to score *murmurs* for the Challenge cost metric, but this is not the actual murmur scoring metric.
+    murmur_cost = compute_cost(
+        outcome_labels, murmur_binary_outputs, outcome_classes, murmur_classes)
+    murmur_scores = (murmur_classes, murmur_auroc, murmur_auprc, murmur_auroc_classes, murmur_auprc_classes,
+                     murmur_f_measure, murmur_f_measure_classes, murmur_accuracy, murmur_accuracy_classes, murmur_weighted_accuracy, murmur_cost)
 
     # Evaluate the outcome model by comparing the labels and model outputs.
-    outcome_auroc, outcome_auprc, outcome_auroc_classes, outcome_auprc_classes = compute_auc(outcome_labels, outcome_scalar_outputs)
-    outcome_f_measure, outcome_f_measure_classes = compute_f_measure(outcome_labels, outcome_binary_outputs)
-    outcome_accuracy, outcome_accuracy_classes = compute_accuracy(outcome_labels, outcome_binary_outputs)
-    outcome_weighted_accuracy = compute_weighted_accuracy(outcome_labels, outcome_binary_outputs, outcome_classes)
-    outcome_cost = compute_cost(outcome_labels, outcome_binary_outputs, outcome_classes, outcome_classes) # This is the clinical outcomes scoring metric.
-    outcome_scores = (outcome_classes, outcome_auroc, outcome_auprc, outcome_auroc_classes, outcome_auprc_classes, \
-        outcome_f_measure, outcome_f_measure_classes, outcome_accuracy, outcome_accuracy_classes, outcome_weighted_accuracy, outcome_cost)
+    outcome_auroc, outcome_auprc, outcome_auroc_classes, outcome_auprc_classes = compute_auc(
+        outcome_labels, outcome_scalar_outputs)
+    outcome_f_measure, outcome_f_measure_classes = compute_f_measure(
+        outcome_labels, outcome_binary_outputs)
+    outcome_accuracy, outcome_accuracy_classes = compute_accuracy(
+        outcome_labels, outcome_binary_outputs)
+    outcome_weighted_accuracy = compute_weighted_accuracy(
+        outcome_labels, outcome_binary_outputs, outcome_classes)
+    # This is the clinical outcomes scoring metric.
+    outcome_cost = compute_cost(
+        outcome_labels, outcome_binary_outputs, outcome_classes, outcome_classes)
+    outcome_scores = (outcome_classes, outcome_auroc, outcome_auprc, outcome_auroc_classes, outcome_auprc_classes,
+                      outcome_f_measure, outcome_f_measure_classes, outcome_accuracy, outcome_accuracy_classes, outcome_weighted_accuracy, outcome_cost)
 
     # Return the results.
     return murmur_scores, outcome_scores
 
 # Find Challenge files.
+
+
 def find_challenge_files(label_folder, output_folder):
     label_files = list()
     output_files = list()
     for label_file in sorted(os.listdir(label_folder)):
-        label_file_path = os.path.join(label_folder, label_file) # Full path for label file
+        label_file_path = os.path.join(
+            label_folder, label_file)  # Full path for label file
         if os.path.isfile(label_file_path) and label_file.lower().endswith('.txt') and not label_file.lower().startswith('.'):
             root, ext = os.path.splitext(label_file)
             output_file = root + '.csv'
-            output_file_path = os.path.join(output_folder, output_file) # Full path for corresponding output file
+            # Full path for corresponding output file
+            output_file_path = os.path.join(output_folder, output_file)
             if os.path.isfile(output_file_path):
                 label_files.append(label_file_path)
                 output_files.append(output_file_path)
             else:
-                raise IOError('Output file {} not found for label file {}.'.format(output_file, label_file))
+                raise IOError('Output file {} not found for label file {}.'.format(
+                    output_file, label_file))
 
     if label_files and output_files:
         return label_files, output_files
@@ -78,6 +107,8 @@ def find_challenge_files(label_folder, output_folder):
         raise IOError('No label or output files found.')
 
 # Load murmurs from label files.
+
+
 def load_murmurs(label_files, classes):
     num_patients = len(label_files)
     num_classes = len(classes)
@@ -96,6 +127,8 @@ def load_murmurs(label_files, classes):
     return labels
 
 # Load outcomes from label files.
+
+
 def load_outcomes(label_files, classes):
     num_patients = len(label_files)
     num_classes = len(classes)
@@ -114,6 +147,8 @@ def load_outcomes(label_files, classes):
     return labels
 
 # Load outputs from output files.
+
+
 def load_classifier_outputs(output_files, classes):
     # The outputs should have the following form:
     #
@@ -131,7 +166,8 @@ def load_classifier_outputs(output_files, classes):
 
     # Iterate over the patients.
     for i in range(num_patients):
-        patient_id, patient_classes, patient_binary_outputs, patient_scalar_outputs = load_challenge_outputs(output_files[i])
+        patient_id, patient_classes, patient_binary_outputs, patient_scalar_outputs = load_challenge_outputs(
+            output_files[i])
 
         # Allow for unordered or reordered classes.
         for j, x in enumerate(classes):
@@ -143,6 +179,8 @@ def load_classifier_outputs(output_files, classes):
     return binary_outputs, scalar_outputs
 
 # For each patient, set a specific class to positive if no class is positive or multiple classes are positive.
+
+
 def enforce_positives(outputs, classes, positive_class):
     num_patients, num_classes = np.shape(outputs)
     j = classes.index(positive_class)
@@ -154,6 +192,8 @@ def enforce_positives(outputs, classes, positive_class):
     return outputs
 
 # Compute macro AUROC and macro AUPRC.
+
+
 def compute_auc(labels, outputs):
     num_patients, num_classes = np.shape(labels)
 
@@ -237,6 +277,8 @@ def compute_auc(labels, outputs):
     return macro_auroc, macro_auprc, auroc, auprc
 
 # Compute a binary confusion matrix, where the columns are the expert labels and the rows are the classifier labels.
+
+
 def compute_confusion_matrix(labels, outputs):
     assert(np.shape(labels)[0] == np.shape(outputs)[0])
     assert(all(value in (0, 1, True, False) for value in np.unique(labels)))
@@ -256,6 +298,8 @@ def compute_confusion_matrix(labels, outputs):
     return A
 
 # Compute binary one-vs-rest confusion matrices, where the columns are the expert labels and the rows are the classifier labels.
+
+
 def compute_one_vs_rest_confusion_matrix(labels, outputs):
     assert(np.shape(labels) == np.shape(outputs))
     assert(all(value in (0, 1, True, False) for value in np.unique(labels)))
@@ -266,18 +310,20 @@ def compute_one_vs_rest_confusion_matrix(labels, outputs):
     A = np.zeros((num_classes, 2, 2))
     for i in range(num_patients):
         for j in range(num_classes):
-            if labels[i, j] == 1 and outputs[i, j] == 1: # TP
+            if labels[i, j] == 1 and outputs[i, j] == 1:  # TP
                 A[j, 0, 0] += 1
-            elif labels[i, j] == 0 and outputs[i, j] == 1: # FP
+            elif labels[i, j] == 0 and outputs[i, j] == 1:  # FP
                 A[j, 0, 1] += 1
-            elif labels[i, j] == 1 and outputs[i, j] == 0: # FN
+            elif labels[i, j] == 1 and outputs[i, j] == 0:  # FN
                 A[j, 1, 0] += 1
-            elif labels[i, j] == 0 and outputs[i, j] == 0: # TN
+            elif labels[i, j] == 0 and outputs[i, j] == 0:  # TN
                 A[j, 1, 1] += 1
 
     return A
 
 # Compute macro F-measure.
+
+
 def compute_f_measure(labels, outputs):
     num_patients, num_classes = np.shape(labels)
 
@@ -299,6 +345,8 @@ def compute_f_measure(labels, outputs):
     return macro_f_measure, f_measure
 
 # Compute accuracy.
+
+
 def compute_accuracy(labels, outputs):
     # Compute confusion matrix.
     assert(np.shape(labels) == np.shape(outputs))
@@ -322,6 +370,8 @@ def compute_accuracy(labels, outputs):
     return accuracy, accuracy_classes
 
 # Compute accuracy.
+
+
 def compute_weighted_accuracy(labels, outputs, classes):
     # Define constants.
     if classes == ['Present', 'Unknown', 'Absent']:
@@ -329,7 +379,8 @@ def compute_weighted_accuracy(labels, outputs, classes):
     elif classes == ['Abnormal', 'Normal']:
         weights = np.array([[5, 1], [5, 1]])
     else:
-        raise NotImplementedError('Weighted accuracy undefined for classes {}'.format(', '.join(classes)))
+        raise NotImplementedError(
+            'Weighted accuracy undefined for classes {}'.format(', '.join(classes)))
 
     # Compute confusion matrix.
     assert(np.shape(labels) == np.shape(outputs))
@@ -348,22 +399,32 @@ def compute_weighted_accuracy(labels, outputs, classes):
     return weighted_accuracy
 
 # Define total cost for algorithmic prescreening of m patients.
+
+
 def cost_algorithm(m):
     return 10*m
 
 # Define total cost for expert screening of m patients out of a total of n total patients.
+
+
 def cost_expert(m, n):
-    return (25 + 397*(m/n) -1718*(m/n)**2 + 11296*(m/n)**4) * n
+    return (25 + 397*(m/n) - 1718*(m/n)**2 + 11296*(m/n)**4) * n
 
 # Define total cost for treatment of m patients.
+
+
 def cost_treatment(m):
     return 10000*m
 
 # Define total cost for missed/late treatement of m patients.
+
+
 def cost_error(m):
     return 50000*m
 
 # Compute Challenge cost metric.
+
+
 def compute_cost(labels, outputs, label_classes, output_classes):
     # Define positive and negative classes for referral and treatment.
     positive_classes = ['Present', 'Unknown', 'Abnormal']
@@ -373,10 +434,14 @@ def compute_cost(labels, outputs, label_classes, output_classes):
     A = compute_confusion_matrix(labels, outputs)
 
     # Identify positive and negative classes for referral.
-    idx_label_positive = [i for i, x in enumerate(label_classes) if x in positive_classes]
-    idx_label_negative = [i for i, x in enumerate(label_classes) if x in negative_classes]
-    idx_output_positive = [i for i, x in enumerate(output_classes) if x in positive_classes]
-    idx_output_negative = [i for i, x in enumerate(output_classes) if x in negative_classes]
+    idx_label_positive = [i for i, x in enumerate(
+        label_classes) if x in positive_classes]
+    idx_label_negative = [i for i, x in enumerate(
+        label_classes) if x in negative_classes]
+    idx_output_positive = [i for i, x in enumerate(
+        output_classes) if x in positive_classes]
+    idx_output_negative = [i for i, x in enumerate(
+        output_classes) if x in negative_classes]
 
     # Identify true positives, false positives, false negatives, and true negatives.
     tp = np.sum(A[np.ix_(idx_output_positive, idx_label_positive)])
@@ -399,11 +464,13 @@ def compute_cost(labels, outputs, label_classes, output_classes):
 
     return mean_cost
 
+
 if __name__ == '__main__':
     murmur_scores, outcome_scores = evaluate_model(sys.argv[1], sys.argv[2])
 
     classes, auroc, auprc, auroc_classes, auprc_classes, f_measure, f_measure_classes, accuracy, accuracy_classes, weighted_accuracy, cost = murmur_scores
-    murmur_output_string = 'AUROC,AUPRC,F-measure,Accuracy,Weighted Accuracy,Cost\n{:.3f},{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}\n'.format(auroc, auprc, f_measure, accuracy, weighted_accuracy, cost)
+    murmur_output_string = 'AUROC,AUPRC,F-measure,Accuracy,Weighted Accuracy,Cost\n{:.3f},{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}\n'.format(
+        auroc, auprc, f_measure, accuracy, weighted_accuracy, cost)
     murmur_class_output_string = 'Classes,{}\nAUROC,{}\nAUPRC,{}\nF-measure,{}\nAccuracy,{}\n'.format(
         ','.join(classes),
         ','.join('{:.3f}'.format(x) for x in auroc_classes),
@@ -412,7 +479,8 @@ if __name__ == '__main__':
         ','.join('{:.3f}'.format(x) for x in accuracy_classes))
 
     classes, auroc, auprc, auroc_classes, auprc_classes, f_measure, f_measure_classes, accuracy, accuracy_classes, weighted_accuracy, cost = outcome_scores
-    outcome_output_string = 'AUROC,AUPRC,F-measure,Accuracy,Weighted Accuracy,Cost\n{:.3f},{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}\n'.format(auroc, auprc, f_measure, accuracy, weighted_accuracy, cost)
+    outcome_output_string = 'AUROC,AUPRC,F-measure,Accuracy,Weighted Accuracy,Cost\n{:.3f},{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}\n'.format(
+        auroc, auprc, f_measure, accuracy, weighted_accuracy, cost)
     outcome_class_output_string = 'Classes,{}\nAUROC,{}\nAUPRC,{}\nF-measure,{}\nAccuracy,{}\n'.format(
         ','.join(classes),
         ','.join('{:.3f}'.format(x) for x in auroc_classes),
@@ -421,7 +489,8 @@ if __name__ == '__main__':
         ','.join('{:.3f}'.format(x) for x in accuracy_classes))
 
     output_string = '#Murmur scores\n' + murmur_output_string + '\n#Outcome scores\n' + outcome_output_string \
-        + '\n#Murmur scores (per class)\n' + murmur_class_output_string + '\n#Outcome scores (per class)\n' + outcome_class_output_string
+        + '\n#Murmur scores (per class)\n' + murmur_class_output_string + \
+        '\n#Outcome scores (per class)\n' + outcome_class_output_string
 
     if len(sys.argv) == 3:
         print(output_string)

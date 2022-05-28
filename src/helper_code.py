@@ -234,6 +234,7 @@ def sanitize_scalar_value(x):
 
 # Save Challenge outputs.
 def save_challenge_outputs(filename, patient_id, classes, labels, probabilities):
+    print(filename)
     # Format Challenge outputs.
     patient_string = '#{}'.format(patient_id)
     class_string = ','.join(str(c) for c in classes)
@@ -244,6 +245,7 @@ def save_challenge_outputs(filename, patient_id, classes, labels, probabilities)
     # Write the Challenge outputs.
     with open(filename, 'w') as f:
         f.write(output_string)
+        print(f"Wrote {filename}")
 
 # Load Challenge outputs.
 def load_challenge_outputs(filename):

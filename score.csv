@@ -1,21 +1,21 @@
 #Murmur scores
 AUROC,AUPRC,F-measure,Accuracy,Weighted Accuracy,Cost
-1.000,1.000,1.000,1.000,1.000,16082.867
+0.613,0.416,0.338,0.725,0.392,19994.458
 
 #Outcome scores
 AUROC,AUPRC,F-measure,Accuracy,Weighted Accuracy,Cost
-1.000,1.000,1.000,1.000,1.000,5285.633
+0.624,0.608,0.629,0.635,0.608,11582.680
 
 #Murmur scores (per class)
 Classes,Present,Unknown,Absent
-AUROC,1.000,1.000,1.000
-AUPRC,1.000,1.000,1.000
-F-measure,1.000,1.000,1.000
-Accuracy,1.000,1.000,1.000
+AUROC,0.642,0.617,0.581
+AUPRC,0.317,0.133,0.799
+F-measure,0.049,0.125,0.841
+Accuracy,0.026,0.083,0.971
 
 #Outcome scores (per class)
 Classes,Abnormal,Normal
-AUROC,1.000,1.000
-AUPRC,1.000,1.000
-F-measure,1.000,1.000
-Accuracy,1.000,1.000
+AUROC,0.624,0.624
+AUPRC,0.588,0.627
+F-measure,0.582,0.676
+Accuracy,0.593,0.667
